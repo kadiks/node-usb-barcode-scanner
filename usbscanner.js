@@ -23,10 +23,10 @@ function getDevices(){
 	return devices
 }
 
-let usbDevice;
-
 usbScanner.prototype.init = function(options){
-	var vendorId =  options.vendorId || 1534
+	// console.log("options", options);
+	var vendorId =  options.vendorId || 1534;
+	this.format = options.format || null;
 	var allDevices = getDevices();
 	//hidMap defining keyboard code to coresponding string value
 	this.hidMap = options.hidMap || {
@@ -47,13 +47,13 @@ usbScanner.prototype.init = function(options){
 	});
 
 	var device = new HID.HID(scanner.path);
-	usbDevice = device;
 	// start waiting for scan events
-	this.startScanning(device);
+	this.startScanning(device)
 }
 
 usbScanner.prototype.startScanning = function(device){
-	var hidMap = this.hidMap
+	var hidMap = this.hidMap;
+	var format = this.format;
 	//empty array for barcode bytes
 	var bcodeBuff = [];
 	//string variable to hold barcode string
@@ -66,22 +66,27 @@ usbScanner.prototype.startScanning = function(device){
 	device.on("data", function(chunk) {
     //second byte of buffer is all that contains data
     if (hidMap[chunk[2]]) {
-        //if not bcodeBuff escape char (40)
-        if (chunk[2] !== 40) {
-            bcodeBuff.push(hidMap[chunk[2]])
-        } else {
-        //revieved escape code, join bCodebuff array and
-            aBarcode = bcodeBuff.join("")
-            bcodeBuff = []
-            //emit newCode event
-           	getCode(aBarcode)
-        }
+		if (format !== null) {
+			bcodeBuff.push(hidMap[chunk[2]]);
+			aBarcode = bcodeBuff.join("");
+			if (aBarcode.match(format) !== null) {
+				bcodeBuff = [];
+				getCode(aBarcode);
+			}
+		} else {
+			//if not bcodeBuff escape char (40)
+			if (chunk[2] !== 44) {
+				bcodeBuff.push(hidMap[chunk[2]])
+			} else {
+			//revieved escape code, join bCodebuff array and
+				aBarcode = bcodeBuff.join("")
+				bcodeBuff = []
+				//emit newCode event
+				getCode(aBarcode)
+			}
+		}
     }
 });
-}
-
-usbScanner.prototype.stopScanning = function() {
-	usbDevice.close();
 }
 
 module.exports = {usbScanner:usbScanner, getDevices:getDevices}

@@ -13,7 +13,9 @@ var connectedHidDevices = getDevices()
 console.log(connectedHidDevices)
 
 //initialize new usbScanner - takes optional parmeters vendorId and hidMap - check source for details
-var scanner = new usbScanner();
+var scanner = new usbScanner({
+	format: "[\\w]{16}" // will receive code if 16 char barcode
+});
 
 //scanner emits a data event once a barcode has been read and parsed
 scanner.on("data", function(code){
